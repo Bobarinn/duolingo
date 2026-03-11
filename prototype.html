@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adaptive Chess Coach - Mobile Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+            background: #f5f5f5;
+            color: #000;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .prototype-container {
+            width: 1280px;
+            height: 720px;
+            background: #ffffff;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 60px;
+            padding: 40px;
+        }
+
+        /* iPhone Frame */
+        .iphone-frame {
+            width: 300px;
+            height: 600px;
+            background: #1a1a1a;
+            border-radius: 42px;
+            padding: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .iphone-notch {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 123px;
+            height: 25px;
+            background: #1a1a1a;
+            border-radius: 0 0 18px 18px;
+            z-index: 10;
+        }
+
+        .iphone-screen {
+            width: 100%;
+            height: 100%;
+            background: #1F2937;
+            border-radius: 32px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* App Content */
+        .app-screen {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: none;
+            flex-direction: column;
+            background: #1F2937;
+        }
+
+        .app-screen.active {
+            opacity: 1;
+            display: flex;
+        }
+
+        /* App Header */
+        .app-header {
+            background: #1F2937;
+            padding: 44px 18px 18px 18px;
+            color: white;
+        }
+
+        .app-header-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .close-btn {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 21px;
+            color: #9CA3AF;
+            cursor: pointer;
+        }
+
+        .progress-bar-container {
+            flex: 1;
+            height: 11px;
+            background: #374151;
+            border-radius: 11px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #06B6D4 0%, #3B82F6 100%);
+            width: 30%;
+            border-radius: 12px;
+        }
+
+        .hearts-counter {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .hearts-icon {
+            color: #EC4899;
+            font-size: 18px;
+        }
+
+        .app-header h1 {
+            font-size: 21px;
+            font-weight: 700;
+            margin-bottom: 0;
+            color: white;
+        }
+
+        .app-header .streak {
+            font-size: 11px;
+            opacity: 0.7;
+            color: #9CA3AF;
+        }
+
+        /* App Content Area */
+        .app-content {
+            flex: 1;
+            padding: 21px 18px;
+            overflow-y: auto;
+            background: #1F2937;
+        }
+
+        .app-content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .app-content::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 2px;
+        }
+
+        /* Chess Board */
+        .chessboard {
+            width: 240px;
+            height: 240px;
+            margin: 0 auto 14px;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            border: 2px solid #111827;
+            border-radius: 7px;
+            overflow: hidden;
+        }
+
+        .square {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 25px;
+            position: relative;
+        }
+
+        .square.light {
+            background: #374151;
+        }
+
+        .square.dark {
+            background: #1F2937;
+        }
+
+        .square.highlight {
+            background: #06B6D4 !important;
+        }
+
+        .square.highlight .piece {
+            filter: brightness(1.2);
+        }
+
+        .square.highlight-attack {
+            background: #EC4899 !important;
+        }
+
+        .square.highlight-attack .piece {
+            filter: brightness(1.2);
+        }
+
+        .square.wrong-move {
+            background: #EF4444 !important;
+            box-shadow: inset 0 0 0 2px #991B1B;
+        }
+
+        .piece {
+            user-select: none;
+        }
+
+        .move-indicator {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #06B6D4;
+            color: #fff;
+            font-size: 8px;
+            padding: 2px 4px;
+            border-radius: 2px;
+            font-weight: 700;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .board-label {
+            text-align: center;
+            font-size: 11px;
+            color: #9CA3AF;
+            margin-bottom: 16px;
+        }
+
+        /* Character Section */
+        .character-section {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .character-avatar {
+            width: 44px;
+            height: 44px;
+            background: #58CC02;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+
+        .speech-bubble {
+            background: #374151;
+            border: 2px solid #4B5563;
+            border-radius: 14px;
+            padding: 10px 14px;
+            position: relative;
+            flex: 1;
+        }
+
+        .speech-bubble::before {
+            content: '';
+            position: absolute;
+            left: -7px;
+            top: 14px;
+            width: 0;
+            height: 0;
+            border-top: 7px solid transparent;
+            border-bottom: 7px solid transparent;
+            border-right: 7px solid #4B5563;
+        }
+
+        .speech-bubble p {
+            color: #F9FAFB;
+            font-size: 12px;
+            line-height: 1.3;
+            margin: 0;
+        }
+
+        /* Content Sections */
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #F9FAFB;
+            margin-bottom: 10px;
+        }
+
+        .text-content {
+            font-size: 12px;
+            line-height: 1.5;
+            color: #D1D5DB;
+            margin-bottom: 10px;
+        }
+
+        /* Feedback Box */
+        .feedback-box {
+            background: #374151;
+            border-left: 3px solid #6B7280;
+            padding: 12px;
+            border-radius: 5px;
+            margin: 14px 0;
+        }
+
+        .feedback-box p {
+            font-size: 12px;
+            line-height: 1.4;
+            color: #F9FAFB;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .feedback-box.success {
+            background: #10B981;
+            border-left: 3px solid #059669;
+        }
+
+        .feedback-box.success p {
+            color: #fff;
+        }
+
+        /* Stats Box */
+        .stats-box {
+            background: #374151;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .stats-box p {
+            font-size: 11px;
+            color: #D1D5DB;
+            margin: 0;
+        }
+
+        /* List */
+        ul {
+            list-style: none;
+            margin: 10px 0;
+            padding: 0;
+        }
+
+        li {
+            font-size: 11px;
+            line-height: 1.5;
+            margin-bottom: 7px;
+            padding-left: 16px;
+            position: relative;
+            color: #D1D5DB;
+        }
+
+        li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #58CC02;
+            font-weight: 700;
+        }
+
+        /* Progress */
+        .progress-item {
+            margin-bottom: 12px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 11px;
+            color: #F9FAFB;
+        }
+
+        .progress-bar {
+            background: #374151;
+            height: 5px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #58CC02;
+        }
+
+        /* Button */
+        .action-button {
+            width: 100%;
+            background: transparent;
+            color: #D1D5DB;
+            border: 2px solid #4B5563;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .action-button:hover {
+            background: #374151;
+            border-color: #6B7280;
+            color: #F9FAFB;
+        }
+
+        .hint-box {
+            background: #374151;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #4B5563;
+            color: #D1D5DB;
+        }
+
+        .highlight-text {
+            background: #4B5563;
+            padding: 2px 5px;
+            color: #F9FAFB;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        /* Info Panel */
+        .info-panel {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .info-panel h2 {
+            font-size: 32px;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 16px;
+        }
+
+        .info-panel p {
+            font-size: 17px;
+            line-height: 1.7;
+            color: #555;
+            margin-bottom: 14px;
+        }
+
+        .screen-indicator-info {
+            font-size: 13px;
+            color: #58CC02;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 12px;
+        }
+
+        .feature-list {
+            margin-top: 20px;
+        }
+
+        .feature-item {
+            background: #fafafa;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border: 1px solid #e8e8e8;
+        }
+
+        .feature-item h4 {
+            font-size: 15px;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 6px;
+        }
+
+        .feature-item p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+
+        /* Navigation */
+        .navigation {
+            position: absolute;
+            bottom: 30px;
+            right: 40px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .nav-button {
+            background: #ffffff;
+            border: 2px solid #e0e0e0;
+            color: #000;
+            padding: 8px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .nav-button:hover {
+            border-color: #58CC02;
+            color: #58CC02;
+        }
+
+        .screen-indicator {
+            position: absolute;
+            bottom: 30px;
+            left: 40px;
+            font-size: 13px;
+            color: #999;
+            z-index: 10;
+        }
+
+        .back-link {
+            position: absolute;
+            top: 30px;
+            left: 40px;
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 10;
+            transition: color 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: #58CC02;
+        }
+
+        /* Fullscreen */
+        .prototype-container:fullscreen,
+        .prototype-container:-webkit-full-screen,
+        .prototype-container:-moz-full-screen {
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div class="prototype-container" id="prototype">
+        <a href="presentation.html" class="back-link">← Back to Presentation</a>
+
+        <!-- iPhone Mockup -->
+        <div class="iphone-frame">
+            <div class="iphone-notch"></div>
+            <div class="iphone-screen">
+
+                <!-- Screen 1: Puzzle Attempt -->
+                <div class="app-screen active">
+                    <div class="app-header">
+                        <div class="app-header-top">
+                            <div class="close-btn">✕</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill"></div>
+                            </div>
+                            <div class="hearts-counter">
+                                <span class="hearts-icon">⚡</span>
+                                <span>25</span>
+                            </div>
+                        </div>
+                        <h1>Solve the puzzle</h1>
+                    </div>
+                    <div class="app-content">
+                        <div class="character-section">
+                            <div class="character-avatar">🦉</div>
+                            <div class="speech-bubble">
+                                <p>Where should your queen go?</p>
+                            </div>
+                        </div>
+                        <div class="chessboard">
+                            <!-- Row 8 -->
+                            <div class="square light"></div>
+                            <div class="square dark"></div>
+                            <div class="square light"></div>
+                            <div class="square dark"></div>
+                            <div class="square light"></div>
+                            <div class="square dark"></div>
+                            <div class="square light"><span class="piece">♚</span></div>
+                            <div class="square dark"></div>
+                            <!-- Row 7 -->
+                            <div class="square dark"></div>
+                            <div class="square light"></div>
+                            <div class="square dark"></div>
+                            <div class="square light"></div>
+                            <div class="square dark"></div>
+                            <div class="square light"><span class="piece">♘</span></div>
+                            <div class="square dark"><span class="piece">♟</span></div>
+                            <div class="square light"></div>
+                            <!-- Row 6 -->
+                            <div class="square light"></div>
+                            <div class="square dark"></div>
+                            <div class="square light"></div>
+                            <div class="square dark"></div>
+                            <div class="square light"></div>
+                            <div class="square dark"></div>
+                            <div class="square light"><span class="piece">♛</span></div>
+                            <div class="square dark"></div>
+                            <!-- Row 5 -->
+                            <div class="square dark"></div>
+                            <div class="square light"></div>
+                            <div class="square dark"></div>
+                            <div class="square light"></div>
+                            <div class="square dark"></div>
+                            <div class="square light wrong-move"><span class="piece">♕</span><div class="move-indicator">Qh5</div></div>
+                            <div class="square dark"></div>
+                            <div class="square light"></div>
+                            <!-- Rows 4-1 -->
+                            <div class="square light"></div><div class="square dark"></div><div class="square light"></div><div class="square dark"></div>
+                            <div class="square light"></div><div class="square dark"></div><div class="square light"></div><div class="square dark"></div>
+                            <div class="square dark"></div><div class="square light"></div><div class="square dark"></div><div class="square light"></div>
+                            <div class="square dark"></div><div class="square light"></div><div class="square dark"></div><div class="square light"></div>
+                            <div class="square light"></div><div class="square dark"></div><div class="square light"></div><div class="square dark"></div>
+                            <div class="square light"></div><div class="square dark"></div><div class="square light"></div><div class="square dark"></div>
+                            <div class="square dark"></div><div class="square light"><span class="piece">♔</span></div><div class="square dark"></div><div class="square light"></div>
+                            <div class="square dark"></div><div class="square light"></div><div class="square dark"></div><div class="square light"></div>
+                        </div>
+                        <div class="board-label">White to move</div>
+
+                        <div class="text-content">You moved <span class="highlight-text">Qh5</span>, attacking the black queen.</div>
+
+                        <div class="feedback-box">
+                            <p>Not quite — let's break it down. There's a more powerful tactic available.</p>
+                        </div>
+
+                        <button class="action-button" onclick="nextScreen()">See Explanation</button>
+                    </div>
+                </div>
+
+                <!-- Screen 2: AI Explanation -->
+                <div class="app-screen">
+                    <div class="app-header">
+                        <div class="app-header-top">
+                            <div class="close-btn">✕</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" style="width: 50%;"></div>
+                            </div>
+                            <div class="hearts-counter">
+                                <span class="hearts-icon">⚡</span>
+                                <span>25</span>
+                            </div>
+                        </div>
+                        <h1>Understanding the tactic</h1>
+                    </div>
+                    <div class="app-content">
+                        <div class="chessboard">
+                            <!-- Row 8 -->
+                            <div class="square light"></div><div class="square dark"></div><div class="square light"></div><div class="square dark"></div>
+                            <div class="square light"></div><div class="square dark"></div>
+                            <div class="square light highlight-attack"><span class="piece">♚</span></div><div class="square dark"></div>
+                            <!-- Row 7 -->
+                            <div class="square dark"></div><div class="square light"></div><div class="square dark"></div><div class="square light"></div>
+                            <div class="square dark"></div><div class="square light"></div>
+                            <div class="square dark highlight"><span class="piece">♘</span><div class="move-indicator">Nf7+</div></div><div class="square light"></div>
+                            <!-- Row 6 -->
+                            <div class="square light"></div><div class="square dark"></div><div class="square light"></div><div class="square dark"></div>
+                            <div class="square light"></div><div class="square dark"></div>
+                            <div class="square light highlight-attack"><span class="piece">♛</span></div><div class="square dark"></div>
+                            <!-- Rows 5-1 -->
+                            <div class="square dark"></div><div class="square light"></div><div class="square dark"></div><div class="square light"></div>
+                            <div class="square dark"></div><div class="square light"></div><div class="square dark"></div><div class="square light"></div>
+                            <div class="square light"></div><div class="square dark"></div><div class="square light"></div><div class="square dark"></div>
+                            <div class="square light"></div><div class="square dark"></div><div class="square light"></div><div class="square dark"></div>
+                            <div class="square dark"></div><div class="square light"></div><div class="square dark"></div><div class="square light"></div>
+                            <div class="square dark"></div><div class="square light"></div><div class="square dark"></div><div class="square light"></div>
+                            <div class="square light"></div><div class="square dark"></div><div class="square light"></div><div class="square dark"></div>
+                            <div class="square light"></div><div class="square dark"></div><div class="square light"></div><div class="square dark"></div>
+                            <div class="square dark"></div><div class="square light"><span class="piece">♔</span></div><div class="square dark"></div><div class="square light"></div>
+                            <div class="square dark"></div><div class="square light"></div><div class="square dark"></div><div class="square light"></div>
+                        </div>
+                        <div class="board-label">Better move: Nf7+ (Knight Fork)</div>
+
+                        <div class="section-title">What You Missed</div>
+                        <div class="text-content">You moved your queen too early. The stronger move was <strong>Nf7+</strong>, which creates a knight fork attacking both the king and queen.</div>
+
+                        <div class="section-title">Key Elements</div>
+                        <ul>
+                            <li>Knight to f7 gives check to the king</li>
+                            <li>Simultaneously attacks the queen (royal fork)</li>
+                            <li>King must move, then you win the queen</li>
+                        </ul>
+
+                        <button class="action-button" onclick="nextScreen()">Try a Similar Puzzle</button>
+                    </div>
+                </div>
+
+                <!-- Screen 3: Practice Puzzle -->
+                <div class="app-screen">
+                    <div class="app-header">
+                        <div class="app-header-top">
+                            <div class="close-btn">✕</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" style="width: 75%;"></div>
+                            </div>
+                            <div class="hearts-counter">
+                                <span class="hearts-icon">⚡</span>
+                                <span>30</span>
+                            </div>
+                        </div>
+                        <h1>Practice Puzzle</h1>
+                    </div>
+                    <div class="app-content">
+                        <div class="chessboard">
+                            <!-- Row 8 -->
+                            <div class="square light"><span class="piece">♜</span></div><div class="square dark"></div><div class="square light"></div><div class="square dark"></div>
+                            <div class="square light highlight-attack"><span class="piece">♚</span></div><div class="square dark"></div><div class="square light"></div><div class="square dark"><span class="piece">♜</span></div>
+                            <!-- Row 7 -->
+                            <div class="square dark"><span class="piece">♟</span></div><div class="square light"><span class="piece">♟</span></div><div class="square dark"></div><div class="square light"></div>
+                            <div class="square dark"><span class="piece">♟</span></div><div class="square light"><span class="piece">♟</span></div><div class="square dark"><span class="piece">♟</span></div><div class="square light"><span class="piece">♟</span></div>
+                            <!-- Row 6 -->
+                            <div class="square light"></div><div class="square dark"></div><div class="square light"></div>
+                            <div class="square dark highlight"><span class="piece">♘</span><div class="move-indicator">Nd7+</div></div>
+                            <div class="square light"></div><div class="square dark"></div>
+                            <div class="square light highlight-attack"><span class="piece">♛</span></div><div class="square dark"></div>
+                            <!-- Rows 5-3 -->
+                            <div class="square dark"></div><div class="square light"></div><div class="square dark"></div><div class="square light"></div>
+                            <div class="square dark"></div><div class="square light"></div><div class="square dark"></div><div class="square light"></div>
+                            <div class="square light"></div><div class="square dark"></div><div class="square light"></div><div class="square dark"></div>
+                            <div class="square light"></div><div class="square dark"></div><div class="square light"></div><div class="square dark"></div>
+                            <div class="square dark"></div><div class="square light"></div><div class="square dark"></div><div class="square light"></div>
+                            <div class="square dark"></div><div class="square light"></div><div class="square dark"></div><div class="square light"></div>
+                            <!-- Row 2 -->
+                            <div class="square light"><span class="piece">♙</span></div><div class="square dark"><span class="piece">♙</span></div><div class="square light"><span class="piece">♙</span></div><div class="square dark"></div>
+                            <div class="square light"><span class="piece">♙</span></div><div class="square dark"><span class="piece">♙</span></div><div class="square light"><span class="piece">♙</span></div><div class="square dark"><span class="piece">♙</span></div>
+                            <!-- Row 1 -->
+                            <div class="square dark"></div><div class="square light"></div><div class="square dark"></div><div class="square light"></div>
+                            <div class="square dark"><span class="piece">♔</span></div><div class="square light"></div><div class="square dark"></div><div class="square light"></div>
+                        </div>
+                        <div class="board-label">White to move — Find the fork</div>
+
+                        <div class="hint-box">
+                            <p style="margin: 0; font-size: 13px;"><strong>Hint:</strong> Look for a knight move that gives check and attacks another piece.</p>
+                        </div>
+
+                        <div class="text-content">You found: <span class="highlight-text">Nd7+</span></div>
+
+                        <div class="feedback-box success">
+                            <p>Correct! You identified Nd7+, which forks the king and queen.</p>
+                        </div>
+
+                        <div class="stats-box">
+                            <p><strong>+15 XP</strong> • Pattern Mastery Bonus</p>
+                        </div>
+
+                        <button class="action-button" onclick="nextScreen()">Continue</button>
+                    </div>
+                </div>
+
+                <!-- Screen 4: Learning Insight -->
+                <div class="app-screen">
+                    <div class="app-header">
+                        <div class="app-header-top">
+                            <div class="close-btn">✕</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" style="width: 100%;"></div>
+                            </div>
+                            <div class="hearts-counter">
+                                <span class="hearts-icon">⚡</span>
+                                <span>45</span>
+                            </div>
+                        </div>
+                        <h1>Your Progress</h1>
+                    </div>
+                    <div class="app-content">
+                        <div class="section-title">Tactical Skills</div>
+
+                        <div class="progress-item">
+                            <div class="progress-header">
+                                <span style="font-weight: 600;">Knight Forks</span>
+                                <span style="color: #58CC02;">Improving</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 65%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="progress-item">
+                            <div class="progress-header">
+                                <span style="font-weight: 600;">Pins</span>
+                                <span style="color: #58CC02;">Strong</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 85%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="progress-item">
+                            <div class="progress-header">
+                                <span style="font-weight: 600;">Back Rank Mates</span>
+                                <span style="color: #9CA3AF;">Needs Practice</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 40%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="section-title" style="margin-top: 24px;">Pattern Detected</div>
+                        <div class="text-content">You sometimes miss fork opportunities when the knight is not centrally positioned.</div>
+
+                        <div class="section-title">Recommended Practice</div>
+                        <ul>
+                            <li>5 more fork puzzles suggested</li>
+                            <li>Focus on back-rank tactics this week</li>
+                            <li>Discovery attacks (new concept)</li>
+                        </ul>
+
+                        <button class="action-button" onclick="location.href='presentation.html'">Return to Presentation</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="info-panel">
+            <div class="screen-indicator-info" id="screen-info">Screen 1 of 4</div>
+            <h2 id="screen-title">Puzzle Attempt</h2>
+            <p id="screen-desc">The learner attempts a chess puzzle but makes an incorrect move. Instead of just showing the answer, the system provides context and learning.</p>
+
+            <div class="feature-list">
+                <div class="feature-item">
+                    <h4>Immediate Feedback</h4>
+                    <p>Real-time analysis helps learners understand mistakes in context, not just memorize correct moves.</p>
+                </div>
+                <div class="feature-item">
+                    <h4>Contextual Learning</h4>
+                    <p>AI explains the "why" behind each move, transforming errors into teaching moments with personalized guidance.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="navigation">
+            <button class="nav-button" onclick="prevScreen()">← Previous</button>
+            <button class="nav-button" onclick="nextScreen()">Next →</button>
+        </div>
+
+        <div class="screen-indicator">
+            <span id="screen-counter">Screen 1 / 4</span>
+        </div>
+    </div>
+
+    <script>
+        let currentScreen = 0;
+        const screens = document.querySelectorAll('.app-screen');
+        const totalScreens = screens.length;
+
+        const screenInfo = [
+            {
+                title: "Puzzle Attempt",
+                desc: "The learner attempts a chess puzzle but makes an incorrect move. Instead of just showing the answer, the system provides context and learning."
+            },
+            {
+                title: "AI Explanation",
+                desc: "The AI coach explains the tactical concept that was missed. Visual highlights on the board show the knight fork pattern, making it easier to understand."
+            },
+            {
+                title: "Practice Puzzle",
+                desc: "Immediate reinforcement with a similar puzzle. The system generates follow-up exercises targeting the specific pattern the learner needs to practice."
+            },
+            {
+                title: "Learning Insight",
+                desc: "Progress tracking shows improvement across different tactical patterns. The system identifies learning opportunities and recommends personalized practice."
+            }
+        ];
+
+        function showScreen() {
+            screens.forEach(screen => screen.classList.remove('active'));
+            screens[currentScreen].classList.add('active');
+
+            document.getElementById('screen-counter').textContent = `Screen ${currentScreen + 1} / ${totalScreens}`;
+            document.getElementById('screen-info').textContent = `Screen ${currentScreen + 1} of ${totalScreens}`;
+            document.getElementById('screen-title').textContent = screenInfo[currentScreen].title;
+            document.getElementById('screen-desc').textContent = screenInfo[currentScreen].desc;
+        }
+
+        function nextScreen() {
+            currentScreen = (currentScreen + 1) % totalScreens;
+            showScreen();
+        }
+
+        function prevScreen() {
+            currentScreen = (currentScreen - 1 + totalScreens) % totalScreens;
+            showScreen();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowRight':
+                case ' ':
+                    e.preventDefault();
+                    nextScreen();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    prevScreen();
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    currentScreen = 0;
+                    showScreen();
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    currentScreen = totalScreens - 1;
+                    showScreen();
+                    break;
+                case 'f':
+                case 'F':
+                    e.preventDefault();
+                    toggleFullscreen();
+                    break;
+            }
+        });
+
+        function toggleFullscreen() {
+            const prototype = document.getElementById('prototype');
+            if (!document.fullscreenElement) {
+                if (prototype.requestFullscreen) {
+                    prototype.requestFullscreen();
+                } else if (prototype.webkitRequestFullscreen) {
+                    prototype.webkitRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
